@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import firebaseApp from './firebase';
-import AuthComponent from './AuthComponent';
 
-function App() {
+import PostForm from './components/PostForm';
+
+import firebaseApp from './firebase/firebase';
+import AuthComponent from './components/AuthComponent';
+import PostList from './components/PostList';
+
+const App = () =>  {
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [posts, setPosts] = useState([]);
@@ -75,48 +79,14 @@ function App() {
       <AuthComponent />
 
 
-      <form onSubmit={handleSubmit} className="space-y-2 mb-6">
-        <input
-          className="border p-2 w-full"
-          placeholder="ゲームタイトル"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <textarea
-          className="border p-2 w-full"
-          placeholder="感想を入力..."
-          rows="4"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        <button className="bg-blue-500 text-white px-4 py-2 rounded" type="submit">
-          {editingId ? '更新する' : '投稿'}
-        </button>
-      </form>
+      <PostForm handleSubmit={handleSubmit} 
+                title={title} 
+                setTitle={setTitle} 
+                comment={comment} 
+                setComment={setComment} 
+                editingId={editingId}/>
 
-      <div className="space-y-4">
-        {posts.map((post) => (
-          <div key={post.id} className="border p-3 rounded relative">
-            <h2 className="font-semibold">{post.title}</h2>
-            <p>{post.comment}</p>
-            <p className="text-sm text-gray-500 mt-1">投稿日: {post.timestamp}</p> {/* 投稿日時を表示 */}
-            <div className="mt-2 space-x-2">
-              <button
-                onClick={() => handleEdit(post)}
-                className="text-blue-500 text-sm hover:underline"
-              >
-                編集
-              </button>
-              <button
-                onClick={() => handleDelete(post.id)}
-                className="text-red-500 text-sm hover:underline"
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PostList posts={posts} handleEdit={handleEdit} handleDelete={handleDelete}/>
     </div>
   );
 }
