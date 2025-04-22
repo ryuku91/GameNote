@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 
 import PostForm from './components/PostForm';
 
-import firebaseApp from './firebase/firebase';
+import { db } from './firebase/firebase';
+import { ref, push, update, remove, onValue } from 'firebase/database'
 import AuthComponent from './components/AuthComponent';
 import PostList from './components/PostList';
 
 const App = () =>  {
+  const [user, setUser] = useState(null);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [posts, setPosts] = useState([]);
@@ -14,42 +16,53 @@ const App = () =>  {
 
   
 
-  // ローカルストレージから読み込み
+  // useEffectでFirebaseから投稿取得
   useEffect(() => {
-    const saved = localStorage.getItem('gameNotes');
-    if (saved) {
-      setPosts(JSON.parse(saved));
-    }
+    const postsRef = ref(db, `posts`);
+    const unsubscribe = onValue(postsRef, (snapshot) => {
+      const data = snapshot.val();
+      if(data) {
+        const loadedPosts = Object.entries(data).map(([id, value]) => ({
+          id,
+          ...value
+        }));
+        setPosts(loadedPosts.reverse());
+      } else {
+        setPosts([]);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
+   
 
   // 投稿処理
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !comment) return;
 
+    
     const timestamp = new Date().toLocaleString(); // 投稿日時を取得
 
     if (editingId) {
-      // 編集モード中なら更新
-      const updatedPosts = posts.map((post) =>
-        post.id === editingId
-          ? { ...post, title, comment, timestamp } // 編集時にも日時更新
-          : post
-      );
-      setPosts(updatedPosts);
-      localStorage.setItem('gameNotes', JSON.stringify(updatedPosts));
+      // 編集モード
+      const postRef = ref(db, `posts/${editingId}`);
+      await update(postRef, {
+        title,
+        comment,
+        timestamp,
+      })
       setEditingId(null);
     } else {
       // 新規投稿
       const newPost = {
-        id: Date.now(),
         title,
         comment,
-        timestamp, // 投稿日時をセット
+        timestamp,
+        userId: user.uid,
+        userName: user.displayName || user.email,
       };
-      const updatedPosts = [newPost, ...posts];
-      setPosts(updatedPosts);
-      localStorage.setItem('gameNotes', JSON.stringify(updatedPosts));
+      await push(ref(db, 'posts'), newPost);
     }
 
     setTitle('');
@@ -57,10 +70,8 @@ const App = () =>  {
   };
 
   // 削除処理
-  const handleDelete = (id) => {
-    const updatedPosts = posts.filter((post) => post.id !== id);
-    setPosts(updatedPosts);
-    localStorage.setItem('gameNotes', JSON.stringify(updatedPosts));
+  const handleDelete = async (id) => {
+    await remove(ref(db, `posts/${id}`))
   };
 
   // 編集モード突入
@@ -74,19 +85,26 @@ const App = () =>  {
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🎮 {firebaseApp.name}</h1>
+      <h1 className="text-2xl font-bold mb-4">🎮 GameNote</h1>
       <h2>ログイン画面</h2>
-      <AuthComponent />
+      <AuthComponent onAuthChange={setUser}/>
 
-
-      <PostForm handleSubmit={handleSubmit} 
+      {user ? (
+        <>
+        <PostForm handleSubmit={handleSubmit} 
                 title={title} 
                 setTitle={setTitle} 
                 comment={comment} 
                 setComment={setComment} 
-                editingId={editingId}/>
+                editingId={editingId}
+                user={user}/>
 
-      <PostList posts={posts} handleEdit={handleEdit} handleDelete={handleDelete}/>
+        <PostList posts={posts} handleEdit={handleEdit} handleDelete={handleDelete}/>
+        </>
+      ) : (
+        <p className="text-center text-gray-600 mt-4">投稿するはログインしてください</p>
+      )
+    }
     </div>
   );
 }

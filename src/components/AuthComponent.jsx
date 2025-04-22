@@ -3,7 +3,7 @@ import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from '../firebase/firebase.js';
 
 
-const AuthComponent = () => {
+const AuthComponent = ({onAuthChange}) => {
   const [user, setUser] = useState(null); // ログイン状態
 
   // ログイン状態の監視
@@ -12,17 +12,18 @@ const AuthComponent = () => {
       if (authUser) {
         // ログインしている場合
         setUser(authUser);
+        onAuthChange(authUser);
       } else {
         // ログアウトしている場合
         setUser(null);
       }
-    });
+    }, [onAuthChange]);
 
     // アンマウント時に監視解除
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [onAuthChange]);
 
   // ログイン
   const handleSignIn = async () => {

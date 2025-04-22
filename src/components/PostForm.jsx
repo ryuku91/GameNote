@@ -1,5 +1,5 @@
 
-const PostForm = ({handleSubmit, title, setTitle, comment, setComment,editingId}) => {
+const PostForm = ({handleSubmit, title, setTitle, comment, setComment,editingId,user}) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-2 mb-6">
@@ -16,7 +16,9 @@ const PostForm = ({handleSubmit, title, setTitle, comment, setComment,editingId}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />
-        <button className="bg-blue-500 text-white px-4 py-2 rounded" type="submit">
+        <button className="bg-blue-500 text-white px-4 py-2 rounded" 
+                type="submit"
+                disabled={!user}>
           {editingId ? '更新する' : '投稿'}
         </button>
       </form>
