@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup, signOut, signInAnonymously } from "firebase/auth";
 import { auth, googleProvider } from '../firebase/firebase.js';
 
 
@@ -37,6 +37,16 @@ const AuthComponent = ({onAuthChange}) => {
       console.error('ログインエラー', error);
     }
   };
+  
+  //ゲストログイン
+  const handleGuestLogin = async () => {
+    try {
+      const result = await signInAnonymously(auth);
+      console.log("ゲストログイン成功", result.user);
+    } catch (error) {
+      console.error("ゲストログインエラー", error);
+    }
+  };
 
   // ログアウト
   const handleSignOut = async () => {
@@ -50,16 +60,19 @@ const AuthComponent = ({onAuthChange}) => {
   return (
     <div>
       {user ? (
-        <div>
-          <p>ログインユーザー: {user.displayName}</p>
-          <button onClick={handleSignOut}>ログアウト</button>
-        </div>
-      ) : (
-        <div>
-          <p>ログインしていません</p>
-          <button onClick={handleSignIn}>ログイン</button>
-        </div>
-      )}
+  <div>
+    <p>
+      ログインユーザー: {user.isAnonymous ? "ゲストユーザー" : user.displayName}
+    </p>
+    <button onClick={handleSignOut}>ログアウト</button>
+  </div>
+) : (
+  <div>
+    <p>ログインしていません</p>
+    <button onClick={handleSignIn}>Googleでログイン</button>
+    <button onClick={handleGuestLogin}>ゲストでログイン</button>
+  </div>
+)}
     </div>
   );
 };

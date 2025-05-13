@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PostForm from '../components/PostForm';
 import PostList from '../components/PostList';
+import AuthComponent from '../components/AuthComponent';
 import { db, storage } from '../firebase/firebase';
 import { ref as dbRef, onValue, push, update, remove } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -78,6 +79,7 @@ const PostsPage = ({ user }) => {
   return (
     <div className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">🎮 GameNote 投稿一覧</h1>
+      <AuthComponent onAuthChange={() => {}} />
       <PostForm
         handleSubmit={handleSubmit}
         title={title}
