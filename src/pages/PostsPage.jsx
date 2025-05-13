@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
 import PostForm from '../components/PostForm';
 import PostList from '../components/PostList';
-import { db } from '../firebase/firebase';
-import { ref, onValue, push, update, remove } from 'firebase/database';
+import { db, storage } from '../firebase/firebase';
+import { ref as dbRef, onValue, push, update, remove } from 'firebase/database';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const PostsPage = ({ user }) => {
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
+  const [genre, setGenre] = useState('');
+  const [rating, setRating] = useState(0);
+  const [imageFile, setImageFile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  
 
   useEffect(() => {
-    const postsRef = ref(db, 'posts');
+    const postsRef = dbRef(db, 'posts');
     return onValue(postsRef, (snapshot) => {
       const data = snapshot.val() || {};
       const loadedPosts = Object.entries(data).map(([id, value]) => ({ id, ...value })).reverse();
@@ -21,33 +26,52 @@ const PostsPage = ({ user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !comment) return;
+    if (!title || !comment || !rating) return;
     const timestamp = new Date().toLocaleString();
 
+    let downloadURL = '';
+    if (imageFile) {
+      const imgRef = storageRef(storage, `images/${Date.now()}_${imageFile.name}`);
+      const snapshot = await uploadBytes(imgRef, imageFile);
+      downloadURL = await getDownloadURL(snapshot.ref);
+    }
+
     if (editingId) {
-      await update(ref(db, `posts/${editingId}`), { title, comment, timestamp });
+      await update(dbRef(db, `posts/${editingId}`), { 
+        title, 
+        comment, 
+        genre, 
+        rating, 
+        imageUrl: downloadURL,
+        timestamp, 
+      });
       setEditingId(null);
     } else {
       const newPost = {
         title,
         comment,
+        genre,
+        rating,
+        imageUrl: downloadURL,
         timestamp,
         userId: user.uid,
         userName: user.displayName || user.email,
       };
-      await push(ref(db, 'posts'), newPost);
+      await push(dbRef(db, 'posts'), newPost);
     }
     setTitle('');
     setComment('');
+    setImageFile(null);
   };
 
   const handleDelete = async (id) => {
-    await remove(ref(db, `posts/${id}`));
+    await remove(dbRef(db, `posts/${id}`));
   };
 
   const handleEdit = (post) => {
     setTitle(post.title);
     setComment(post.comment);
+    setGenre(post.genre || '');
     setEditingId(post.id);
   };
 
@@ -60,6 +84,12 @@ const PostsPage = ({ user }) => {
         setTitle={setTitle}
         comment={comment}
         setComment={setComment}
+        genre={genre}
+        setGenre={setGenre}
+        rating={rating}
+        setRating={setRating}
+        imageFile={imageFile}
+        setImageFile={setImageFile}
         editingId={editingId}
         user={user}
       />
