@@ -6,6 +6,7 @@ import { db, storage } from '../firebase/firebase';
 import { ref as dbRef, onValue, push, update, remove } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+
 const PostsPage = ({ user }) => {
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
@@ -53,7 +54,7 @@ const PostsPage = ({ user }) => {
         comment,
         genre,
         rating,
-        imageUrl: downloadURL,
+        ...(downloadURL && { imageUrl: downloadURL }),
         timestamp,
         userId: user.uid,
         userName: user.displayName || user.email,
@@ -62,6 +63,8 @@ const PostsPage = ({ user }) => {
     }
     setTitle('');
     setComment('');
+    setGenre('');
+    setRating(0);
     setImageFile(null);
   };
 
@@ -77,8 +80,13 @@ const PostsPage = ({ user }) => {
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🎮 GameNote 投稿一覧</h1>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-blue-600 text-white py-4 shadow-md">
+      <h1 className="text-2xl font-bold text-center">🎮 GameNote 投稿一覧</h1>
+      </header>
+
+      <main className="max-w-2xl mx-auto p-4">
+      <div className="bg-white p-6 rounded-xl shadow-md mb-6">
       <AuthComponent onAuthChange={() => {}} />
       <PostForm
         handleSubmit={handleSubmit}
@@ -95,11 +103,13 @@ const PostsPage = ({ user }) => {
         editingId={editingId}
         user={user}
       />
+      </div>
       <PostList
         posts={posts}
         handleEdit={handleEdit}
         handleDelete={handleDelete}
       />
+    </main>
     </div>
   );
 };
