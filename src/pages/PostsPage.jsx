@@ -3,7 +3,7 @@ import PostForm from '../components/PostForm';
 import PostList from '../components/PostList';
 import AuthComponent from '../components/AuthComponent';
 import { db, storage } from '../firebase/firebase';
-import { ref as dbRef, onValue, push, update, remove } from 'firebase/database';
+import { ref as dbRef, onValue, push, update, remove, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
@@ -15,7 +15,20 @@ const PostsPage = ({ user }) => {
   const [imageFile, setImageFile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   
+  
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const snap = await get(dbRef(db, `users/${user.uid}`));
+      setUserProfile(snap.val());
+    };
+  
+    if (user?.uid) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
 
   useEffect(() => {
     const postsRef = dbRef(db, 'posts');
@@ -57,7 +70,8 @@ const PostsPage = ({ user }) => {
         ...(downloadURL && { imageUrl: downloadURL }),
         timestamp,
         userId: user.uid,
-        userName: user.displayName || user.email,
+        userName: userProfile?.displayName || user.displayName || user.email,
+        userImage: userProfile?.profileUrl || '',
       };
       await push(dbRef(db, 'posts'), newPost);
     }
@@ -83,6 +97,9 @@ const PostsPage = ({ user }) => {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-blue-600 text-white py-4 shadow-md">
       <h1 className="text-2xl font-bold text-center">🎮 GameNote 投稿一覧</h1>
+      <a href="/profile" className="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100">
+          プロフィール
+      </a>
       </header>
 
       <main className="max-w-2xl mx-auto p-4">
