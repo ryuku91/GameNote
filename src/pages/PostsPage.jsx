@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PostForm from '../components/PostForm';
 import PostList from '../components/PostList';
 import AuthComponent from '../components/AuthComponent';
-import { db, storage } from '../firebase/firebase';
+import { db, storage } from '../firebase/firebase.js';
 import { ref as dbRef, onValue, push, update, remove, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
