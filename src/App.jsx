@@ -6,7 +6,7 @@ import ProfilePage from './pages/ProfilePage';
 import PostsPage from './pages/PostsPage';
 
 const App = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authUser) => {
@@ -18,7 +18,7 @@ const App = () => {
   return (
 
     <BrowserRouter>
-        {user === null ? (
+        {user === undefined ? (
            <div className="p-6 text-center">読み込み中...</div>
           ) : (
       <Routes>
