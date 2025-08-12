@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import PostForm from '../components/PostForm';
 import PostList from '../components/PostList';
-import AuthComponent from '../components/AuthComponent';
-import { db, storage } from '../firebase/firebase.js';
+import { db, storage, auth } from '../firebase/firebase.js';
+import { signOut } from 'firebase/auth';
 import { ref as dbRef, onValue, push, update, remove, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -16,14 +17,14 @@ const PostsPage = ({ user }) => {
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-  
-  
+
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       const snap = await get(dbRef(db, `users/${user.uid}`));
       setUserProfile(snap.val());
     };
-  
+
     if (user?.uid) {
       fetchUserProfile();
     }
@@ -52,13 +53,13 @@ const PostsPage = ({ user }) => {
     }
 
     if (editingId) {
-      await update(dbRef(db, `posts/${editingId}`), { 
-        title, 
-        comment, 
-        genre, 
-        rating, 
+      await update(dbRef(db, `posts/${editingId}`), {
+        title,
+        comment,
+        genre,
+        rating,
         imageUrl: downloadURL,
-        timestamp, 
+        timestamp,
       });
       setEditingId(null);
     } else {
@@ -97,14 +98,36 @@ const PostsPage = ({ user }) => {
     <div className="min-h-screen bg-gray-100">
       <header className="bg-blue-600 text-white py-4 shadow-md">
       <h1 className="text-2xl font-bold text-center">🎮 GameNote 投稿一覧</h1>
-      <a href="/profile" className="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100">
-          プロフィール
-      </a>
+      <Link
+              to="/profile"
+              className="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100"
+            >
+              プロフィール
+            </Link>
+            <button
+              onClick={() => signOut(auth)}
+              className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded"
+            >
+              ログアウト
+            </button>
       </header>
 
       <main className="max-w-2xl mx-auto p-4">
+      {user?.isAnonymous ? (
+        <div className="bg-white p-6 rounded-xl shadow-md mb-6">
+          <p className="text-center text-gray-700">
+          投稿するにはログインしてください。
+          <br />
+          <button
+              onClick={() => signOut(auth)}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              ログイン画面へ
+            </button>
+          </p>
+        </div>
+        ) : (
       <div className="bg-white p-6 rounded-xl shadow-md mb-6">
-      <AuthComponent onAuthChange={() => {}} />
       <PostForm
         handleSubmit={handleSubmit}
         title={title}
@@ -121,6 +144,7 @@ const PostsPage = ({ user }) => {
         user={user}
       />
       </div>
+      )}
       <PostList
         posts={posts}
         handleEdit={handleEdit}
