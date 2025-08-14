@@ -8,7 +8,7 @@ import { getStorage } from "firebase/storage";
 import { getDatabase } from "firebase/database";
 
 import { signInAnonymously } from "firebase/auth";
-
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -36,5 +36,11 @@ const db = getDatabase(firebaseApp);
 
 const storage = getStorage(firebaseApp);
 
+const functions = getFunctions(firebaseApp);
+
+if (import.meta.env.DEV) {
+  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+}
+
 export default firebaseApp;
-export { auth, googleProvider, db, storage, signInAnonymously };
+export { auth, googleProvider, db, storage, signInAnonymously, functions };

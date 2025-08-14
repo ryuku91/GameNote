@@ -1,5 +1,17 @@
+import { useEffect } from "react";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../firebase/firebase.js";
+import ViewsBadge from "./ViewsBadge";
 
-const PostList = ({posts,handleEdit,handleDelete}) => {
+const PostList = ({posts,handleEdit,handleDelete, user}) => {
+  useEffect(() => {
+    if (!user) return; // 認証ユーザーのみ
+    // 直近の1件など、実運用では各カード内で呼ぶのがおすすめ
+    posts.forEach((post) => {
+      const call = httpsCallable(functions, "incrementView");
+      call({ postId: post.id }).catch(console.error);
+    });
+  }, [posts, user]);
     return (
         <div className="space-y-4">
         {posts.map((post) => (
@@ -26,8 +38,8 @@ const PostList = ({posts,handleEdit,handleDelete}) => {
             </p>
             <p>{post.comment}</p>
             <p className="text-sm text-gray-500 mt-1">投稿日: {post.timestamp}</p> {/* 投稿日時を表示 */}
-            
-            
+            <ViewsBadge postId={post.id} />
+
 
             <div className="mt-2 space-x-2">
               <button

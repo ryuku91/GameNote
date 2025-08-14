@@ -149,6 +149,7 @@ const PostsPage = ({ user }) => {
         posts={posts}
         handleEdit={handleEdit}
         handleDelete={handleDelete}
+        user={user}
       />
     </main>
     </div>
