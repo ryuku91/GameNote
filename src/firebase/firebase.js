@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from "firebase/storage";
+import { initializeAppCheck, ReCaptchaV3Provider, getToken } from "firebase/app-check";
 // import { getAnalytics } from "firebase/analytics";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -25,6 +26,22 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 
+if (location.hostname === "localhost") {
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = "8B8A1F2B-B4E4-4840-B869-E2418561B4B4";
+  }
+
+
+  const appCheck = initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaV3Provider("6LdCNM0rAAAAAACoueg92-qP_tgV9DLDdxog6SiF"),
+    isTokenAutoRefreshEnabled: true,
+  });
+
+
+  console.log(firebaseApp.options.appId);
+getToken(appCheck, true)
+  .then(r => console.log("AppCheck OK:", !!r.token))
+  .catch(e => console.warn("AppCheck NG:", e));
+
 
 // 認証オブジェクトの準備
 const auth = getAuth(firebaseApp);
@@ -36,10 +53,10 @@ const db = getDatabase(firebaseApp);
 
 const storage = getStorage(firebaseApp);
 
-const functions = getFunctions(firebaseApp);
+const functions = getFunctions(firebaseApp, "us-central1");
 
-if (import.meta.env.DEV) {
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+if (import.meta.env.VITE_USE_FUNCTIONS_EMULATOR === "true") {
+  connectFunctionsEmulator(functions, "localhost", 5001);
 }
 
 export default firebaseApp;

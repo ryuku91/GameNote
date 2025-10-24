@@ -1,159 +1,93 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import PostForm from '../components/PostForm';
-import PostList from '../components/PostList';
-import { db, storage, auth } from '../firebase/firebase.js';
-import { signOut } from 'firebase/auth';
-import { ref as dbRef, onValue, push, update, remove, get } from 'firebase/database';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import TopBar from "../components/TopBar";
+import PostList from "../components/PostList";
+import { db } from "../firebase/firebase.js";
+import { ref as dbRef, onValue, get, remove } from "firebase/database";
 
-
-const PostsPage = ({ user }) => {
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
-  const [genre, setGenre] = useState('');
-  const [rating, setRating] = useState(0);
-  const [imageFile, setImageFile] = useState(null);
+export default function PostsPage({ user }) {
   const [posts, setPosts] = useState([]);
-  const [editingId, setEditingId] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-
+  const nav = useNavigate();
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    if (!user?.uid) return;
+    (async () => {
       const snap = await get(dbRef(db, `users/${user.uid}`));
       setUserProfile(snap.val());
-    };
-
-    if (user?.uid) {
-      fetchUserProfile();
-    }
+    })();
   }, [user]);
 
-
   useEffect(() => {
-    const postsRef = dbRef(db, 'posts');
-    return onValue(postsRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      const loadedPosts = Object.entries(data).map(([id, value]) => ({ id, ...value })).reverse();
-      setPosts(loadedPosts);
+    const postsRef = dbRef(db, "posts");
+    return onValue(postsRef, (snap) => {
+      const data = snap.val() || {};
+      const loaded = Object.entries(data)
+        .map(([id, v]) => ({ id, ...v }))
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setPosts(loaded);
     });
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title || !comment || !rating) return;
-    const timestamp = new Date().toLocaleString();
+  useEffect(() => {
+    const postsRef = dbRef(db, "posts");
+    return onValue(postsRef, (snap) => {
+      const data = snap.val() || {};
+      const loaded = Object.entries(data)
+        .map(([id, v]) => {
+          // createdAt (number) → そのまま
+          // なければ timestamp (string) を Date.parse で補完
+          const created =
+            typeof v.createdAt === "number"
+              ? v.createdAt
+              : v.timestamp
+              ? Date.parse(v.timestamp) || 0
+              : 0;
+          return { id, ...v, _createdAt: created };
+        })
+        // 新しい順に並べる（降順）
+        .sort((a, b) => b._createdAt - a._createdAt);
 
-    let downloadURL = '';
-    if (imageFile) {
-      const imgRef = storageRef(storage, `images/${Date.now()}_${imageFile.name}`);
-      const snapshot = await uploadBytes(imgRef, imageFile);
-      downloadURL = await getDownloadURL(snapshot.ref);
-    }
+      setPosts(loaded);
+    });
+  }, []);
 
-    if (editingId) {
-      await update(dbRef(db, `posts/${editingId}`), {
-        title,
-        comment,
-        genre,
-        rating,
-        imageUrl: downloadURL,
-        timestamp,
-      });
-      setEditingId(null);
-    } else {
-      const newPost = {
-        title,
-        comment,
-        genre,
-        rating,
-        ...(downloadURL && { imageUrl: downloadURL }),
-        timestamp,
-        userId: user.uid,
-        userName: userProfile?.displayName || user.displayName || user.email,
-        userImage: userProfile?.profileUrl || '',
-      };
-      await push(dbRef(db, 'posts'), newPost);
+   // 削除
+   const handleDelete = async (post) => {
+    if (!user?.uid || user.uid !== post.userId) {
+      alert("削除できません");
+      return;
     }
-    setTitle('');
-    setComment('');
-    setGenre('');
-    setRating(0);
-    setImageFile(null);
+    if (!confirm("この投稿を削除しますか？")) return;
+    try {
+      await remove(dbRef(db, `posts/${post.id}`));
+    } catch (e) {
+      console.error(e);
+      alert("削除に失敗しました");
+    }
   };
 
-  const handleDelete = async (id) => {
-    await remove(dbRef(db, `posts/${id}`));
-  };
-
+  // 編集（編集ページへ）
   const handleEdit = (post) => {
-    setTitle(post.title);
-    setComment(post.comment);
-    setGenre(post.genre || '');
-    setEditingId(post.id);
+    if (!user?.uid || user.uid !== post.userId) {
+      alert("編集できません");
+      return;
+    }
+    nav(`/app/post/${post.id}/edit`);
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white py-4 shadow-md">
-      <h1 className="text-2xl font-bold text-center">🎮 GameNote 投稿一覧</h1>
-      <Link
-              to="/profile"
-              className="text-sm bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-100"
-            >
-              プロフィール
-            </Link>
-            <button
-              onClick={() => signOut(auth)}
-              className="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded"
-            >
-              ログアウト
-            </button>
-      </header>
-
+      <TopBar title="🎮 GameNote 投稿一覧" />
       <main className="max-w-2xl mx-auto p-4">
-      {user?.isAnonymous ? (
-        <div className="bg-white p-6 rounded-xl shadow-md mb-6">
-          <p className="text-center text-gray-700">
-          投稿するにはログインしてください。
-          <br />
-          <button
-              onClick={() => signOut(auth)}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              ログイン画面へ
-            </button>
-          </p>
-        </div>
-        ) : (
-      <div className="bg-white p-6 rounded-xl shadow-md mb-6">
-      <PostForm
-        handleSubmit={handleSubmit}
-        title={title}
-        setTitle={setTitle}
-        comment={comment}
-        setComment={setComment}
-        genre={genre}
-        setGenre={setGenre}
-        rating={rating}
-        setRating={setRating}
-        imageFile={imageFile}
-        setImageFile={setImageFile}
-        editingId={editingId}
-        user={user}
-      />
-      </div>
-      )}
-      <PostList
+        <PostList
         posts={posts}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
         user={user}
-      />
-    </main>
+        userProfile={userProfile}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        />
+      </main>
     </div>
   );
-};
-
-export default PostsPage;
+}

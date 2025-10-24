@@ -3,7 +3,7 @@ import { db, storage} from '../firebase/firebase.js';
 import { ref as dbRef, update, get } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
-
+import FollowCounts from "../components/FollowCounts";
 
 const ProfilePage = ({ user }) => {
   const [displayName, setDisplayName] = useState('');
@@ -38,11 +38,17 @@ const ProfilePage = ({ user }) => {
     navigate('/posts');
   };
 
-  
+
 
   return (
     <div className="p-6 max-w-xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">👤 プロフィール編集</h2>
+      {/* フォロー数/フォロワー数を表示 */}
+     {!user?.isAnonymous && (
+       <div className="mb-4">
+         <FollowCounts uid={user.uid} />
+       </div>
+     )}
       <input
         className="border p-2 w-full mb-4"
         placeholder="表示名"
