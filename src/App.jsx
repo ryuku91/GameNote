@@ -9,6 +9,7 @@ import DmRoomPage from './pages/DmRoomPage';
 import NewPostPage from './pages/NewPostPage';
 import TabLayout from './layouts/TabLayout';
 import EditPostPage from './pages/EditPostPage';
+import DmContactsPage from "./pages/DmContactsPage";
 
 const App = () => {
   const [user, setUser] = useState(undefined);
@@ -46,7 +47,7 @@ const App = () => {
           <Route path="profile" element={<ProfilePage user={user} />} />
           <Route path="dm" element={<DmListPage user={user} />} />
           <Route path="dm/:cid" element={<DmRoomPage user={user} />} />
-
+          <Route path="dm/contacts" element={<DmContactsPage user={user} />} />
           {/* ＋ボタンで遷移する“投稿だけのページ” */}
           <Route path="post/new" element={<NewPostPage user={user} />} />
           <Route path="post/:postId/edit" element={<EditPostPage user={user} />} />
